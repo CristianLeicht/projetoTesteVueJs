@@ -1,59 +1,132 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-router" target="_blank" rel="noopener">router</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
-  </div>
+  <v-form v-model="valid">
+    <v-container>
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <v-text-field
+            v-model="origin"
+            :counter="8"
+            :rules="cepRules"
+            label="Origem"
+            required
+          ></v-text-field>
+        </v-col>
+
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <v-text-field
+            v-model="destination"
+            :counter="8"
+            :rules="cepRules"
+            label="Destino"
+            required
+          ></v-text-field>
+        </v-col>
+
+        <v-row>
+
+      <v-col 
+        cols="12" 
+        md="4" 
+        sm="6">
+          <v-btn @click="calculateDistance"
+            rounded="xl"
+            size="x-large"
+            block>Calcular
+        </v-btn>
+      </v-col>
+
+        </v-row>
+
+        <v-col
+          cols="12"
+          md="4"
+        >
+          <v-text-field disabled=""
+            v-model="distance"
+            label="Distância"
+            required
+          ></v-text-field>
+        </v-col>
+    </v-container>
+  </v-form>
 </template>
 
 <script>
+
+import axios from 'axios'
+import { getDistance } from 'geolib';
+
 export default {
   name: 'HelloWorld',
-  props: {
-    msg: String
+
+  data: () => ({
+      valid: false,
+      origin: '',
+      destination: '',
+      cepRules: [
+        value => {
+          if (value) return true
+
+          return 'Insira o CEP'
+        },
+        value => {
+          const onlyNumbers = /^[0-9]+$/;
+          if (onlyNumbers.test(value)) return true
+
+          return 'O CEP deve conter apenas números'
+        },
+      ],
+      distance: ''
+    }),
+
+    methods: {
+
+    async getCoordinates(cep) {
+
+      try{
+
+        const coordinates = await axios.get(`https://brasilapi.com.br/api/cep/v2/${cep}`, {
+
+        })
+
+        return this.coordinates = coordinates.data.location.coordinates
+
+      }catch{
+
+         alert('Não foi possível encontrar as coordenadas do CEP: '+ cep + '. Por favor tente novamente')
+
+      }
+
+    },
+
+    async calculateDistance() {
+
+      try {
+
+        const [coordinatesOrigin, coordinatesDestination] = await Promise.all([
+
+        this.getCoordinates(this.origin),
+        this.getCoordinates(this.destination)
+
+        ])
+
+        
+      const resultDistance = getDistance(coordinatesOrigin, coordinatesDestination)
+              this.distance = (resultDistance / 1000).toFixed(2).replace('.', ',') + ' km'
+
+      } catch {
+
+        alert('Não foi possível calcular a distância.')
+
+      }
+
+    }
   }
 }
+  
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
