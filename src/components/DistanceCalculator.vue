@@ -1,5 +1,5 @@
 <template>
-  <v-form v-model="valid" style="background-color: #f0f0f0; background-size: cover; background-position: center; height: 100vh;">
+  <v-form v-model="valid" style="background-color: #d2d2d2; background-size: cover; background-position: center; height: 100vh;">
     <v-container>
       <v-row justify="center">
         <v-col
@@ -50,6 +50,8 @@
             :rules="cepRules"
             label="CEP origem"
             required
+            clearable
+            maxlength="9"
           ></v-text-field>
         </v-col>
 
@@ -64,45 +66,71 @@
             :rules="cepRules"
             label="CEP destino"
             required
+            clearable
+            maxlength="9"
           ></v-text-field>
         </v-col>
       </v-row>
 
       <v-row justify="center">
         <v-col 
-          cols="12" 
-          sm="6" 
-          md="1" 
+          cols="auto"
         >
           <v-btn 
             color="indigo-darken-3"
             @click="calculateDistance"
             rounded="xl"
             size="large"
-            :disabled="!origin || !destination"
-            block
+            :disabled="!validacoes()"
+            style="min-width: 150px;"
           >
             Calcular
           </v-btn>
         </v-col>
       </v-row>
 
-      <v-row justify="center">
-        <v-col
-          cols="12"
-          md="2"
-        >
-          <v-text-field
-            variant="plain"
-            class="text-center"
-            style="font-weight: bold;"
-            readonly
-            v-model="distance"
-            required
-          ></v-text-field>
-        </v-col>
+        <v-row v-if="distance"
+            justify="center"
+            :align="center">
+            <v-col
+              cols="12"
+              md="12"
+              class="d-flex align-center justify-center">
+                <span
+                  style="font-weight: bold;
+                  font-size: 32px">
+                  Distância: {{ distance }}
+                </span> 
+            </v-col>
       </v-row>
     </v-container>
+
+  <v-dialog
+    v-model="dialog"
+    max-width="400">
+    <v-card>
+        <v-card-title
+          class="headline">
+          Aviso
+        </v-card-title>
+
+        <v-card-text>
+          {{ dialogMessage }}
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer>
+          </v-spacer>
+          <v-btn
+              variant="tonal"
+              color="indigo-darken-3"
+              text @click="dialog = false">
+            OK
+          </v-btn>
+        </v-card-actions>
+    </v-card>
+  </v-dialog>
+
   </v-form>
 </template>
 
@@ -131,7 +159,9 @@ export default {
           return 'O CEP deve conter apenas números'
         },
       ],
-      distance: ''
+      distance: '',
+      dialog: false,
+      dialogMessage: ''
     }),
 
     methods: {
@@ -146,10 +176,10 @@ export default {
 
         return this.coordinates = coordinates.data.location.coordinates
 
-      }catch{
-
-         alert('Não foi possível encontrar as coordenadas do CEP: '+ cep + '. Por favor tente novamente')
-
+      }catch (error) {        
+        this.dialogMessage = 'Não foi possível encontrar as coordenadas do CEP: '+ cep + '. Por favor tente novamente'
+        this.dialog = true;
+        throw error;
       }
 
     },
@@ -158,27 +188,24 @@ export default {
 
       if (!this.validacoes()) {
 
-        alert('Verifique as informações digitadas.')
+        this.dialogMessage = 'Verifique as informações digitadas.'
+        this.dialog = true
         return;
 
       }
 
+      
       try {
-
-        const [coordinatesOrigin, coordinatesDestination] = await Promise.all([
-
-        this.getCoordinates(this.origin),
-        this.getCoordinates(this.destination)
-
-        ])
+        const coordinatesOrigin = await this.getCoordinates(this.origin);
+        const coordinatesDestination = await this.getCoordinates(this.destination);
 
         
         const resultDistance = getDistance(coordinatesOrigin, coordinatesDestination)
-        this.distance = 'Distância: '+(resultDistance / 1000).toFixed(2).replace('.', ',') + ' km'
+        this.distance = (resultDistance / 1000).toFixed(2).replace('.', ',') + ' km'
 
       } catch {
 
-        alert('Não foi possível calcular a distância.')
+        this.dialog = true
 
       }
     },
