@@ -24,7 +24,7 @@ webpack-plugin-vuetify
 
 git clone https://github.com/CristianLeicht/projetoTesteVueJs.git
 
-cd projetoTesteVueJs
+cd projetoTesteVueJs/application
 
 npm install
 
